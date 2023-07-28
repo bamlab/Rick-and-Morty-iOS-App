@@ -9,12 +9,12 @@ import Foundation
 import Combine
 import Resolver
 
-class EpisodesViewModel {
+class EpisodesViewModel: ObservableObject {
     private var isLoadingPage = false
     
-    let isFirstLoadingPageSubject = CurrentValueSubject<Bool, Never>(true)
+    @Published var isFirstLoadingPageSubject = true
+    @Published var episodesSubject: [Episode] = []
     
-    let episodesSubject = CurrentValueSubject<[Episode], Never>([])
     var currentSearchQuery = ""
     var currentPage = 1
     var canLoadMorePages = true
@@ -30,13 +30,13 @@ class EpisodesViewModel {
         do {
             let episodeResponseModel = try await networkService.fetch(request)
             isLoadingPage = false
-            episodesSubject.value.append(contentsOf: episodeResponseModel.results)
+            episodesSubject.append(contentsOf: episodeResponseModel.results)
             if episodeResponseModel.pageInfo.pageCount == currentPage {
                 canLoadMorePages = false
                 return
             }
             currentPage += 1
-            isFirstLoadingPageSubject.value = false
+            isFirstLoadingPageSubject = false
         } catch {
             #warning("TODO: Handle error")
             if let apiError = error as? APIError {

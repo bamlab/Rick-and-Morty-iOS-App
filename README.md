@@ -1,4 +1,4 @@
-# Rick and Morty iOS App (Combine and MVVM)
+f# Rick and Morty iOS App (Combine and MVVM)
 
 This is a sample iOS 13+ UIKit project using:
 

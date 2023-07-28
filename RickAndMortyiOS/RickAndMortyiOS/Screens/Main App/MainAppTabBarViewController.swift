@@ -6,11 +6,12 @@
 //
 
 import UIKit
+import SwiftUI
 
 class MainAppTabBarViewController: UITabBarController {
-    
+
     let locationsVC = UINavigationController(rootViewController: LocationsViewController())
-    let episodesVC = UINavigationController(rootViewController: EpisodesViewController())
+    let episodesVC = UIHostingController(rootView: EpisodesView())
     let charactersVC = UINavigationController(rootViewController: CharactersViewController())
 
     override func viewDidLoad() {
