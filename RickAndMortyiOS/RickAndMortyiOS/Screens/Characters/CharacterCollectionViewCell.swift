@@ -5,85 +5,88 @@
 //  Created by Alperen Ünal on 6.12.2020.
 //
 
-import UIKit
+import SwiftUI
 import SDWebImage
 import Hero
 import TinyConstraints
 
 final class CharacterCollectionViewCell: UICollectionViewCell {
     static let reuseIdentifier: String = "CharacterCollectionViewCell"
-    
-    private let characterImageView = UIImageView()
-    private let nameLabel = UILabel()
-    private let labelsVerticalStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .vertical
-        stackView.spacing = 4
-        stackView.alignment = .leading
-        return stackView
-    }()
-    private let statusHorizontalStackView: UIStackView = {
-        let stackView = UIStackView()
-        stackView.axis = .horizontal
-        stackView.spacing = 4
-        stackView.alignment = .leading
-        stackView.alignment = .center
-        return stackView
-    }()
-    private let statusLabel = UILabel()
-    private let statusImageView = UIImageView(image: SFSymbols.statusSymbol)
-    
+
     override init(frame: CGRect) {
         super.init(frame: frame)
-        addSubviews()
-        configureContents()
     }
     
     required init?(coder: NSCoder) {
         fatalError("Just… no")
     }
-    
-    private func addSubviews() {
-        contentView.addSubview(characterImageView)
-        characterImageView.edgesToSuperview(excluding: .bottom, insets: .left(8) + .right(8) + .top(8))
-        characterImageView.aspectRatio(1)
-        
-        contentView.addSubview(labelsVerticalStackView)
-        labelsVerticalStackView.topToBottom(of: characterImageView).constant = 8
-        labelsVerticalStackView.edgesToSuperview(excluding: [.top, .bottom], insets: .left(8) + .right(8))
-        
-        labelsVerticalStackView.addArrangedSubview(nameLabel)
-        labelsVerticalStackView.addArrangedSubview(statusHorizontalStackView)
-        
-        statusHorizontalStackView.addArrangedSubview(statusImageView)
-        statusImageView.size(.init(width: 8, height: 8))
-        statusHorizontalStackView.addArrangedSubview(statusLabel)
-    }
-    
-    private func configureContents() {
-        layer.cornerRadius = 10
-        clipsToBounds = true
-        contentView.backgroundColor = .rickBlue
-        
-        nameLabel.font = .preferredFont(forTextStyle: .headline)
-        nameLabel.textColor = .white
-        
-        statusLabel.font = .preferredFont(forTextStyle: .callout)
-        statusLabel.adjustsFontSizeToFitWidth = true
-        statusLabel.textColor = .secondaryLabel
-        
-        characterImageView.clipsToBounds = true
-        characterImageView.layer.cornerRadius = 10
-        characterImageView.sd_imageIndicator = SDWebImageActivityIndicator.gray
-    }
-    
+
     func set(with character: RickAndMortyCharacter) {
-        characterImageView.heroID = character.uuid.uuidString
-        nameLabel.heroID = character.name
-        nameLabel.text = character.name
-        statusImageView.tintColor = character.statusColor
-        statusLabel.text = "\(character.status.rawValue) - \(character.species)"
-        guard let imageURL = URL(string: character.imageUrl) else { return }
-        characterImageView.sd_setImage(with: imageURL)
+        contentView.addSubview(
+            UIHostingController(
+                rootView: CharacterCollectionSwiftUIViewCell(
+                    character: RickAndMortyCharacter(
+                        id: character.id,
+                        name: character.name,
+                        status: character.status,
+                        species: character.species,
+                        gender: character.gender,
+                        imageUrl: character.imageUrl,
+                        created: character.created
+                    )
+                )
+            ).view
+        )
+    }
+}
+
+struct CharacterCollectionSwiftUIViewCell: View {
+    let character: RickAndMortyCharacter
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            AsyncImage(url: URL(string: character.imageUrl)) { phase in
+                switch phase {
+                case .empty:
+                    ProgressView()
+                case .success(let image):
+                    image
+                        .resizable()
+                        .frame(width: 100, height: 100)
+                case .failure:
+                    Image(systemName: "xmark").foregroundColor(Color.red)
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .cornerRadius(10)
+            .padding(.horizontal, 4)
+            .padding(.vertical, 8)
+
+            Text(character.name)
+                .lineLimit(1)
+                .font(.headline)
+                .minimumScaleFactor(0.1)
+                .scaledToFill()
+                .foregroundColor(.white)
+
+            HStack(spacing: 2) {
+                Image(systemName: "circle.fill")
+                    .resizable()
+                    .frame(width: 8, height: 8)
+                    .foregroundColor(Color(character.statusColor))
+
+                Text("\(character.status.rawValue) - \(character.species)")
+                    .lineLimit(1)
+                    .font(.callout)
+                    .foregroundColor(Color(uiColor: .secondaryLabel))
+            }
+            .padding(.vertical, 2)
+        }
+        .padding(.horizontal, 4)
+        .background(Color(UIColor.rickBlue))
+        .cornerRadius(10)
+        .scaledToFit()
+        .frame(width: 100, height: 200)
+        .position(x: 56, y: 80)
     }
 }
