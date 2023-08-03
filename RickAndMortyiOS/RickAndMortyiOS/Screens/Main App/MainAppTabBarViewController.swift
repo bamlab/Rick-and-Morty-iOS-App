@@ -12,7 +12,7 @@ class MainAppTabBarViewController: UITabBarController {
 
     let locationsVC = UINavigationController(rootViewController: LocationsViewController())
     let episodesVC = UIHostingController(rootView: EpisodesView())
-    let charactersVC = UINavigationController(rootViewController: CharactersViewController())
+    let charactersVC = UIHostingController(rootView: CharactersView())
 
     override func viewDidLoad() {
         super.viewDidLoad()

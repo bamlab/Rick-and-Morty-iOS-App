@@ -9,12 +9,12 @@ import Foundation
 import Combine
 import Resolver
 
-class CharactersViewModel {
+class CharactersViewModel: ObservableObject {
     
     private var isLoadingPage = false
     
-    let charactersSubject = CurrentValueSubject<[RickAndMortyCharacter], Never>([])
-    let isFirstLoadingPageSubject = CurrentValueSubject<Bool, Never>(true)
+    @Published var charactersSubject: [RickAndMortyCharacter] = []
+    @Published var isFirstLoadingPageSubject = true
     var currentSearchQuery = ""
     var currentStatus = ""
     var currentGender = ""
@@ -32,11 +32,11 @@ class CharactersViewModel {
         do {
             let characterResponseModel = try await networkService.fetch(request)
             isLoadingPage = false
-            isFirstLoadingPageSubject.value = false
+            isFirstLoadingPageSubject = false
             if currentPage == 1 {
-                charactersSubject.value.removeAll()
+                charactersSubject.removeAll()
             }
-            charactersSubject.value.append(contentsOf: characterResponseModel.results)
+            charactersSubject.append(contentsOf: characterResponseModel.results)
             if characterResponseModel.pageInfo.pageCount == currentPage {
                 canLoadMorePages = false
                 return
