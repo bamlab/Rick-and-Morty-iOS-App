@@ -10,7 +10,7 @@ import Combine
 import Resolver
 import Hero
 
-struct CharactersView: View {
+struct CharactersView: View, CharacterFilterDelegate {
     @InjectedObject var charactersViewModel: CharactersViewModel
     @State var isFilterShow: Bool = false
     @State var searchQuery: String = ""
@@ -67,38 +67,22 @@ struct CharactersView: View {
         }
         .sheet(isPresented: $isFilterShow) {
             CharacterFilterView(
-                charactersViewModel: charactersViewModel,
+                filterDelegate: self,
                 currentStatus: charactersViewModel.currentStatus,
                 currentGender: charactersViewModel.currentGender
             )
         }
     }
-}
 
-struct CharacterFilterView: UIViewControllerRepresentable, CharacterFilterDelegate {
-    func didFilterTapped(selectedStatus: String, selectedGender: String) {
-        charactersViewModel.currentStatus = selectedStatus
-        charactersViewModel.currentGender = selectedGender
+    func didFilterTapped(selectedStatus: String?, selectedGender: String?) {
+        charactersViewModel.currentStatus = selectedStatus ?? ""
+        charactersViewModel.currentGender = selectedGender ?? ""
         charactersViewModel.isFirstLoadingPageSubject = true
         charactersViewModel.canLoadMorePages = true
         charactersViewModel.currentPage = 1
         Task {
             await charactersViewModel.getCharacters()
         }
-    }
-    
-    typealias UIViewControllerType = CharacterFilterViewController
-    let charactersViewModel: CharactersViewModel
-    let currentStatus: String
-    let currentGender: String
-    
-    func makeUIViewController(context: Context) -> CharacterFilterViewController {
-        let vc = CharacterFilterViewController(currentStatus: currentStatus, currentGender: currentGender)
-        vc.filterDelegate = self
-        return vc
-    }
-    
-    func updateUIViewController(_ uiViewController: CharacterFilterViewController, context: Context) {
-        // Updates the state of the specified view controller with new information from SwiftUI.
+        self.isFilterShow.toggle()
     }
 }
