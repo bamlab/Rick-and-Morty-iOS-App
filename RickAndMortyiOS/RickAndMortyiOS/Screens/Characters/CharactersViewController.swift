@@ -14,6 +14,7 @@ struct CharactersView: View, CharacterFilterDelegate {
     @InjectedObject var charactersViewModel: CharactersViewModel
     @State var isFilterShow: Bool = false
     @State var searchQuery: String = ""
+    @State private var selection: String? = nil
 
     var searchCharacters: [RickAndMortyCharacter] {
         if searchQuery.isEmpty {
@@ -42,7 +43,17 @@ struct CharactersView: View, CharacterFilterDelegate {
                             Text("No character found")
                         } else {
                             ForEach(searchCharacters, id: \.uuid) { character in
-                                CharacterCollectionSwiftUIViewCell(character: character)
+                                NavigationLink(
+                                    destination: CharacterDetailView(character: character),
+                                    tag: character.uuid.uuidString,
+                                    selection: $selection
+                                ) {
+                                    CharacterCollectionSwiftUIViewCell(character: character)
+                                        .contentShape(Rectangle())
+                                        .onTapGesture {
+                                            selection = character.uuid.uuidString
+                                        }
+                                }
                             }
                         }
 
