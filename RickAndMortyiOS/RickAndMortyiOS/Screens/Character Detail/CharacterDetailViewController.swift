@@ -5,7 +5,7 @@
 //  Created by Alperen Ünal on 17.01.2021.
 //
 
-import UIKit
+import SwiftUI
 import SDWebImage
 
 class CharacterDetailViewController: UIViewController {
@@ -97,5 +97,22 @@ class CharacterDetailViewController: UIViewController {
             labelsStackView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -8.0),
             labelsStackView.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 8.0),
         ])
+    }
+}
+
+struct CharacterDetailView: UIViewControllerRepresentable {
+    typealias UIViewControllerType = CharacterDetailViewController
+    
+    let character: RickAndMortyCharacter
+    
+    func makeUIViewController(context: Context) -> CharacterDetailViewController {
+        let characterDetailVC = CharacterDetailViewController(character: character)
+        characterDetailVC.characterImageView.heroID = character.uuid.uuidString
+        characterDetailVC.nameLabel.heroID = character.name
+        return characterDetailVC
+    }
+    
+    func updateUIViewController(_ uiViewController: CharacterDetailViewController, context: Context) {
+        // Updates the state of the specified view controller with new information from SwiftUI.
     }
 }
