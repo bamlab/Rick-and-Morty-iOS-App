@@ -10,7 +10,7 @@ import SwiftUI
 
 class MainAppTabBarViewController: UITabBarController {
 
-    let locationsVC = UINavigationController(rootViewController: LocationsViewController())
+    let locationsVC = UIHostingController(rootView: LocationsView())
     let episodesVC = UIHostingController(rootView: EpisodesView())
     let charactersVC = UIHostingController(rootView: CharactersView())
 

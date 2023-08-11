@@ -5,135 +5,42 @@
 //  Created by Alperen Ünal on 31.10.2020.
 //
 
-import UIKit
+import SwiftUI
 import Combine
 import Resolver
 
-class LocationsViewController: UIViewController {
-    //UI Variables
-    @UsesAutoLayout
-    private var tableView = UITableView(frame: .zero, style: .insetGrouped)
-    private let searchController = UISearchController()
-    //Variables
-    private var dataSource: UITableViewDiffableDataSource<Section, Location>!
-    private var cancellables = Set<AnyCancellable>()
-    @LazyInjected private var locationsViewModel: LocationsViewModel
+struct LocationsView: View {
+    @InjectedObject var locationsViewModel: LocationsViewModel
+    @State var searchQuery: String = ""
     
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        configureNavBar()
-        configureTableView()
-        configureDataSource()
-        setViewModelListeners()
-        configureSearchController()
-        setSearchControllerListeners()
-        Task {
-            await locationsViewModel.getLocations()
-        }
+    var filteredLocations: [Location] {
+        if searchQuery.isEmpty { return locationsViewModel.locationsSubject }
+        else { return locationsViewModel.locationsSubject.filter { $0.name.localizedCaseInsensitiveContains(searchQuery) } }
     }
-    
-    private func configureNavBar() {
-        navigationItem.searchController = searchController
-        title = "Locations"
-    }
-    
-    private func setViewModelListeners() {
-        Publishers.CombineLatest(locationsViewModel.isFirstLoadingPageSubject, locationsViewModel.locationsSubject).sink { [weak self] (isLoading, locations) in
-            DispatchQueue.main.async {
-                if isLoading {
-                    self?.tableView.setLoading()
-                } else {
-                    self?.tableView.restore()
-                    self?.createSnapshot(from: locations)
-                    if locations.isEmpty {
-                        self?.tableView.setEmptyMessage(message: "No location found")
+
+    var body: some View {
+        NavigationView {
+            if locationsViewModel.isFirstLoadingPageSubject {
+                ProgressView().task {
+                    await locationsViewModel.getLocations()
+                }
+            } else {
+                List {
+                    if locationsViewModel.locationsSubject.isEmpty && !locationsViewModel.canLoadMorePages {
+                        Text("No location found")
                     } else {
-                        self?.tableView.restore()
+                        ForEach(filteredLocations, id: \.uuid) { location in
+                            Text(location.name).foregroundColor(Color(UIColor.rickBlue))
+                        }
+                    }
+                    
+                    if locationsViewModel.canLoadMorePages && searchQuery.isEmpty {
+                        Text("Loading more...")
+                            .task { await locationsViewModel.getLocations() }
                     }
                 }
-            }
-        }
-        .store(in: &cancellables)
-    }
-}
-
-// MARK: - Table View Data Source Configurations
-extension LocationsViewController: UITableViewDelegate {
-    fileprivate enum Section {
-        case main
-    }
-    
-    private func configureTableView(){
-        tableView.delegate = self
-        tableView.allowsSelection = false
-        tableView.contentInset = UIEdgeInsets(top: 10, left: 0, bottom: 0, right: 0)
-        view.addSubview(tableView)
-        NSLayoutConstraint.activate(tableView.constraintsForAnchoringTo(boundsOf: view))
-    }
-    
-    private func configureDataSource(){
-        dataSource = UITableViewDiffableDataSource<Section, Location>(tableView: tableView) {(tableView, indexPath, locationModel) -> UITableViewCell? in
-            let cell = UITableViewCell()
-            cell.textLabel?.text = locationModel.name
-            cell.textLabel?.textColor = .rickBlue
-            return cell
-        }
-    }
-    
-    private func createSnapshot(from addedLocations: [Location]) {
-        var snapshot = NSDiffableDataSourceSnapshot<Section, Location>()
-        snapshot.appendSections([.main])
-        snapshot.appendItems(addedLocations)
-        dataSource.apply(snapshot, animatingDifferences: true)
-    }
-    
-    func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let position = scrollView.contentOffset.y
-        let tableViewContentSizeHeight = tableView.contentSize.height
-        let scrollViewHeight = scrollView.frame.size.height
-        
-        if position > (tableViewContentSizeHeight - 100 - scrollViewHeight) {
-            Task {
-                await locationsViewModel.getLocations()
-            }
-        }
-    }
-}
-// MARK: - Search Bar Methods
-extension LocationsViewController: UISearchBarDelegate {
-    private func configureSearchController(){
-        searchController.searchBar.delegate = self
-        searchController.searchBar.placeholder = "Search a Location"
-        searchController.obscuresBackgroundDuringPresentation = false
-    }
-    
-    private func setSearchControllerListeners() {
-        NotificationCenter.default.publisher(for: UISearchTextField.textDidChangeNotification, object: searchController.searchBar.searchTextField)
-            .map {
-                ($0.object as! UISearchTextField).text
-            }
-            .debounce(for: 0.3, scheduler: DispatchQueue.main)
-            .removeDuplicates()
-            .sink { (searchQuery) in
-                Task { [weak self] in
-                    await self?.getLocationsBySearchQuery(searchQuery: searchQuery ?? "")
-                }
-            }
-            .store(in: &cancellables)
-    }
-    
-    private func getLocationsBySearchQuery(searchQuery: String) async {
-        locationsViewModel.currentSearchQuery = searchQuery
-        locationsViewModel.canLoadMorePages = true
-        locationsViewModel.currentPage = 1
-        locationsViewModel.locationsSubject.value.removeAll()
-        await locationsViewModel.getLocations()
-    }
-    
-    func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
-        if locationsViewModel.currentSearchQuery != "" {
-            Task {
-                await getLocationsBySearchQuery(searchQuery: "")
+                .searchable(text: $searchQuery, prompt: "Search a Location")
+                .navigationTitle("Locations")
             }
         }
     }
